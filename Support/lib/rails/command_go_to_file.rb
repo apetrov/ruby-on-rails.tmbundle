@@ -21,6 +21,12 @@ class CommandGoToFile
     end
   end  
   
+  def self.autocomplete_file_name(name)
+    puts name
+    Dir[name+".*"].first
+  end
+  
+  
   def self.on_current_line
     current_file = RailsPath.new
 
@@ -39,7 +45,37 @@ class CommandGoToFile
           modules = pieces
         end
 
-        partial = File.join(current_file.rails_root, 'app', 'views', modules, "_#{partial_name}.html.erb")
+        partial = autocomplete_file_name(File.join(current_file.rails_root, 'app', 'views', modules, "_#{partial_name}"))
+        
+        TextMate.open(partial)
+      #replace_html 'activation', :partial => "admin/activations/activation
+      when /replace_html[\s\(].*:partial\s*=>\s*['"](.+?)['"]/
+        partial_name = $1
+        modules = current_file.modules + [current_file.controller_name]
+
+        # Check for absolute path to partial
+        if partial_name.include?('/')
+          pieces = partial_name.split('/')
+          partial_name = pieces.pop
+          modules = pieces
+        end
+
+        partial = autocomplete_file_name(File.join(current_file.rails_root, 'app', 'views', modules, "_#{partial_name}"))
+        
+        TextMate.open(partial)
+      
+      when /render[\s\(].*:template\s*=>\s*['"](.+?)['"]/
+        partial_name = $1
+        modules = current_file.modules + [current_file.controller_name]
+
+        # Check for absolute path to partial
+        if partial_name.include?('/')
+          pieces = partial_name.split('/')
+          partial_name = pieces.pop
+          modules = pieces
+        end
+
+        partial = autocomplete_file_name(File.join(current_file.rails_root, 'app', 'views', modules, "#{partial_name}"))
         TextMate.open(partial)
 
       # Example: render :action => 'login'
