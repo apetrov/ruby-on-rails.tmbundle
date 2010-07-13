@@ -131,6 +131,18 @@ class CommandGoToFile
           full_path = File.join(current_file.rails_root, 'public', javascript)
           TextMate.open full_path
         end
+      when /belongs_to\s:([\w]+)/
+        model_name = $1
+        full_path = File.join(current_file.rails_root, 'app','models', model_name+".rb")
+        TextMate.open full_path
+      when /has_one\s:([\w]+)/
+        model_name = $1
+        full_path = File.join(current_file.rails_root, 'app','models', model_name+".rb")
+        TextMate.open full_path
+      when /has_many\s:([\w]+)s/
+        model_name = $1
+        full_path = File.join(current_file.rails_root, 'app','models', model_name+".rb")
+        TextMate.open full_path
 
       # Example: <%= javascript_include_tag 'general' %>
       # require_javascript is used by bundled_resource plugin
