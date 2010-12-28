@@ -146,6 +146,12 @@ class CommandGoToFile
           full_path = File.join(current_file.rails_root, 'public', javascript)
           TextMate.open full_path
         end
+      when /map.resources?\s*:(\w*)/
+        full_path = File.join(current_file.rails_root, 'app','controllers', $1.to_s+"_controller.rb")
+        TextMate.open full_path
+      when /(\w+).resources?\s*:(\w*)/
+        full_path = File.join(current_file.rails_root, 'app','controllers', $1.to_s,$2.to_s+"_controller.rb")
+        TextMate.open full_path
       when /belongs_to\s:([\w]+)/
         model_name = $1
         full_path = File.join(current_file.rails_root, 'app','models', model_name+".rb")
