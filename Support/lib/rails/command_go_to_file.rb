@@ -90,6 +90,21 @@ class CommandGoToFile
           puts "Don't know where to go when rendering an action from outside a controller"
           exit
         end
+        
+      when /render[\s\(]\s*['"](.+?)['"]/
+        partial_name = $1
+        modules = current_file.modules + [current_file.controller_name]
+
+        # Check for absolute path to partial
+        if partial_name.include?('/')
+          pieces = partial_name.split('/')
+          partial_name = pieces.pop
+          modules = pieces
+        end
+
+        partial = autocomplete_file_name(File.join(current_file.rails_root, 'app', 'views', modules, "_#{partial_name}"))
+        
+        TextMate.open(partial)
 
       # Example: redirect_to :action => 'login'
       when /(redirect_to|redirect_back_or_default)[\s\(]/
