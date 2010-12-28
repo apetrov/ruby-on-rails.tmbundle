@@ -1,36 +1,66 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
+require 'rubygems'
+require "activesupport"
 
-require "#{ENV['TM_SUPPORT_PATH']}/lib/progress"
-TextMate.call_with_progress(:title => "Contacting database", :message => "Fetching database schema…") do
+project = ENV['TM_PROJECT_DIRECTORY']
+word = ENV['TM_CURRENT_WORD']
 
-  project = ENV['TM_PROJECT_DIRECTORY']
-  word = ENV['TM_CURRENT_WORD']
 
-  require "#{project}/config/boot"
-  require "#{project}/config/environment"
+class String
+  def to_fixed_size()
+    result = self
+    result+' '*(50-result.length)
+  end
+end
 
-  if word.blank?
-    STDOUT << "Place cursor on class name (or variation) to show its schema"
-    exit
+
+class TableDefinition
+  attr_accessor :name
+  attr_accessor :columns
+  def initialize(name)
+    @name = name
+    @columns=[]
   end
 
-  klass = word.camelcase.singularize.constantize rescue nil
-  if klass and klass.class == Class and klass.ancestors.include?(ActiveRecord::Base)
-    columns = klass.columns_hash
+  def method_missing(method_name,*opts)
+    @columns<<[opts.first,method_name.to_s]
+  end
 
-    data = []
-    data += [%w[column primary sql_type default]]
-    data += [%w[------ ------- -------- -------]]
-    data += columns.collect { |col, attrs| [col, attrs.primary.to_s, attrs.sql_type.to_s, attrs.default.to_s] }
-
-    STDOUT << data.inject('') do |output, array|
-      output + array.inject('') { |row_str, value| row_str + value.ljust(20) } + "\n"
-    end
-  elsif klass and klass.class == Class and not klass.ancestors.include?(ActiveRecord::Base)
-    STDOUT << "'#{word}' is not an Active Record derived class"
-  else
-    STDOUT << "'#{word}' was not recognised as a class"
+  class<<self
+    attr_accessor :tables
+  end
+  
+  def to_s
+    columns = @columns.sort{|a,b| a.first<=>b.first}
+    ([@name]+columns.map { |column| "#{column.first.to_fixed_size}#{column.last}" }).join("\r\n")
   end
 
 end
+
+
+def create_table(name,options,&block)  
+  table = TableDefinition.new(name.to_s.singularize.underscore)
+  yield(table)
+  TableDefinition.tables||=[]
+  TableDefinition.tables<<table
+end
+
+def add_index(*opts)
+end
+
+
+
+module ActiveRecord
+  class Schema
+    def self.define(opts,&block)
+      yield
+    end
+  end
+end
+
+require "#{project}/db/schema.rb"
+
+name = word.singularize.underscore
+table  = TableDefinition.tables.select{|t| t.name == name.strip}.first
+puts table.to_s
